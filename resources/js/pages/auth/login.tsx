@@ -1,4 +1,5 @@
 import AuthenticatedSessionController from '@/actions/App/Http/Controllers/Auth/AuthenticatedSessionController';
+import googleBtn1x from '@/assets/web/svg/dark/web_dark_sq_ctn.svg';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
@@ -95,9 +96,15 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             </Button>
                         </div>
 
-                        <Button asChild className="mt-4 w-full">
-                            <a href="/auth/google">Sign in with Google</a>
-                        </Button>
+                        <div className="mt-6 flex justify-center">
+                            <a href="/auth/google">
+                                <img
+                                    src={googleBtn1x}
+                                    alt="Sign in with Google"
+                                    className="h-10 w-auto"
+                                />
+                            </a>
+                        </div>
 
                         <div className="text-center text-sm text-muted-foreground">
                             Don't have an account?{' '}
