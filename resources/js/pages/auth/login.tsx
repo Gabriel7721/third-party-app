@@ -95,6 +95,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             </Button>
                         </div>
 
+                        <Button asChild className="mt-4 w-full">
+                            <a href="/auth/google">Sign in with Google</a>
+                        </Button>
+
                         <div className="text-center text-sm text-muted-foreground">
                             Don't have an account?{' '}
                             <TextLink href={register()} tabIndex={5}>

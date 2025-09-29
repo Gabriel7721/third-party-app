@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Rules\NotOldPassword;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class PasswordController extends Controller
 {
@@ -25,9 +28,20 @@ class PasswordController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $validated =  $request->validate([
+            // bắt buộc nhập mật khẩu hiện tại và xác thực đúng
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
+
+            // mật khẩu mới
+            'password' => [
+                'required',
+                'confirmed',
+                PasswordRule::min(8)->mixedCase()->numbers()->symbols(),
+                // khác chuỗi người dùng nhập ở current_password
+                'different:current_password',
+                // so với hash đang lưu (phòng trường hợp không có current_password)          
+                new NotOldPassword(Auth::user()),      
+            ],
         ]);
 
         $request->user()->update([

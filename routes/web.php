@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\GoogleController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -13,5 +14,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+// OAuth Google: logic vẫn giữ nguyên (redirect/ callback)
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])
+    ->name('google.redirect');
+Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])
+    ->name('auth.google.callback');
+
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\NotOldPassword;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Password as PasswordBroker;       // Facade cho reset
+use Illuminate\Validation\Rules\Password as PasswordRule;         // Rule validate độ mạnh
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,36 +36,40 @@ class NewPasswordController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Bước 1: validate tối thiểu để lấy email hợp lệ
         $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'token' => ['required'],
+            'email' => ['required', 'email'],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
+        // Lấy user theo email trong form reset
+        $user = User::where('email', $request->input('email'))->firstOrFail();
+
+        // Bước 2: validate mật khẩu (độ mạnh + không trùng mật khẩu hiện tại)
+        $request->validate([
+            'password' => [
+                'required',
+                'confirmed',
+                PasswordRule::min(8)->mixedCase()->numbers()->symbols(),
+                new NotOldPassword($user), // rule bạn đã tạo
+            ],
+        ]);
+
+        // Bước 3: gọi broker để reset (dùng Facade alias: PasswordBroker)
+        $status = PasswordBroker::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user) use ($request) {
                 $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
+                    'password' => Hash::make($request->string('password')),
                 ])->save();
 
-                event(new PasswordReset($user));
+                // tùy scaffold của bạn: $user->setRememberToken(Str::random(60));
+                // event(new PasswordReset($user));
             }
         );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        if ($status == Password::PasswordReset) {
-            return to_route('login')->with('status', __($status));
-        }
-
-        throw ValidationException::withMessages([
-            'email' => [__($status)],
-        ]);
+        return $status === PasswordBroker::PASSWORD_RESET
+            ? redirect()->route('login')->with('status', __($status))
+            : back()->withErrors(['email' => __($status)]);
     }
 }
